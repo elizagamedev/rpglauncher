@@ -20,11 +20,12 @@ versions of Windows require this, some do not. This is the first step.
 
 The easiest way to use RPGLauncher is to copy RPGLauncher.exe and
 RPGLauncher.dll into the same folder as the game's RPG_RT.exe, and run
-RPGLauncher.exe. This should work 99% of the time for English-language and Japanese-language games.
+RPGLauncher.exe. This should work 99% of the time for English-language and
+Japanese-language games.
 
 *If you have problems*, check out the troubleshooting section before asking.
-If you still have issues, contact me through my
-[Tumblr account](mathewvq.tumblr.com).
+If you still have issues, submit a new issue on the tracker or contact me
+through my [Tumblr account](http://mathewvq.tumblr.com/).
 
 Advanced Features
 -----------------
