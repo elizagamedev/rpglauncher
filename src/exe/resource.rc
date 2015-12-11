@@ -1,0 +1,5 @@
+MAINICON    ICON "../icon.ico"
+DLL         RCDATA "../../bin/RPGLauncher.dll"
+#ifdef GUESS_ENCODING
+LIBGUESS    RCDATA "../libguess.dll"
+#endif
