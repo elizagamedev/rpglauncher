@@ -18,10 +18,12 @@ Quick Start Guide
 You must have East-Asian language support installed to run Japanese games. Some
 versions of Windows require this, some do not. This is the first step.
 
-The easiest way to use RPGLauncher is to copy RPGLauncher.exe and
-RPGLauncher.dll into the same folder as the game's RPG_RT.exe, and run
-RPGLauncher.exe. This should work 99% of the time for English-language and
-Japanese-language games.
+The easiest way to use RPGLauncher is to copy RPGLauncher.exe into the same
+folder as the game's RPG_RT.exe and run it. This should work 99% of the time
+for English-language and Japanese-language games.
+
+Note that the new version doesn't require you to have RPGLauncher.dll, so you
+can delete that if you were using an older version.
 
 *If you have problems*, check out the troubleshooting section before asking.
 If you still have issues, submit a new issue on the tracker or contact me
