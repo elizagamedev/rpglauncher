@@ -10,7 +10,8 @@ BOOL file_getFullPath(Path path, const WCHAR *src);
 static inline BOOL file_exists(const Path filename)
 {
     DWORD dwAttrib = GetFileAttributesW(filename);
-    return dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+    return dwAttrib != INVALID_FILE_ATTRIBUTES
+        && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 #endif

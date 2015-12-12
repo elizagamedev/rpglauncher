@@ -16,7 +16,7 @@ BOOL file_fixPath(Path path, size_t size)
     if (size >= MAX_PATH)
         return TRUE;
 
-    //Append backslash if necessary
+    // Append backslash if necessary
     if (path[size - 1] != '\\') {
         if (size == MAX_PATH - 1)
             return TRUE;
@@ -27,11 +27,10 @@ BOOL file_fixPath(Path path, size_t size)
 
 BOOL file_getFullPath(Path path, const WCHAR *src)
 {
-    if (src == NULL || src[0] == 0) {
+    if (src == NULL || src[0] == 0)
         return TRUE;
-    }
 
-    //Get full path name
+    // Get full path name
     size_t size = GetFullPathNameW(src, MAX_PATH, path, NULL);
     return file_fixPath(path, size);
 }

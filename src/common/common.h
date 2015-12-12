@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-//Includes
+// Includes
 #define WIN32_LEAN_AND_MEAN
 #define _WIN32_WINNT 0x0500
 #define SECURITY_WIN32
@@ -16,15 +16,15 @@
 #define NO_DSHOW_STRSAFE
 #include <dshow.h>
 
-//Constants
+// Constants
 #define ENV_SAVE_PATH L"RPGL_SAVE"
 #define ENV_RTP_PATH L"RPGL_RTP"
 #define ENV_CODEPAGE L"RPGL_CP"
 
-//Types
+// Types
 typedef WCHAR Path[MAX_PATH];
 
-//Macros
+// Macros
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define STRLEN(str) (sizeof(str) / sizeof((str)[0]) - 1)
 

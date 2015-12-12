@@ -8,7 +8,7 @@ WCHAR *util_toWideAllocCP(const CHAR *str, int cp)
 
     size_t size = MultiByteToWideChar(cp, 0, str, -1, NULL, 0);
     if (size > 0) {
-        WCHAR *wstr = (WCHAR*)malloc(size * sizeof(WCHAR));
+        WCHAR *wstr = (WCHAR *)malloc(size * sizeof(WCHAR));
         MultiByteToWideChar(cp, 0, str, -1, wstr, size);
         return wstr;
     }
@@ -35,7 +35,7 @@ static BOOL _getFile(Path dst, const WCHAR *root, const CHAR *file)
 
 BOOL util_getPatchedPath(Path dst, const CHAR *src)
 {
-    //Save file
+    // Save file
     const CHAR *ext = PathFindExtensionA(src) + 1;
     if (!stricmp(ext, "lsd")) {
         Path wsrc;
@@ -44,10 +44,10 @@ BOOL util_getPatchedPath(Path dst, const CHAR *src)
         return file_concatPath(dst, config.savePath, wsrc);
     }
 
-    //RTP file
+    // RTP file
     if (src[0] == FAKE_RTP_PATH[0])
         return _getFile(dst, config.rtpPath, src + STRLEN(FAKE_RTP_PATH));
 
-    //Game file
+    // Game file
     return _getFile(dst, L"", src);
 }

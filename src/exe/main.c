@@ -28,19 +28,21 @@ int extract(HINSTANCE hInstance, const char *name, const Path filename)
     HRSRC foundRes;
     HGLOBAL	loadedRes;
 
-    if ((foundRes = FindResourceA(hInstance, name, RT_RCDATA)) == NULL) {
-	    return ERR_UNKNOWN;
-	}
-    if ((loadedRes = LoadResource(NULL, foundRes)) == NULL) {
-	    return ERR_UNKNOWN;
-	}
+    if ((foundRes = FindResourceA(hInstance, name, RT_RCDATA)) == NULL)
+        return ERR_UNKNOWN;
+    if ((loadedRes = LoadResource(NULL, foundRes)) == NULL)
+        return ERR_UNKNOWN;
 
-    VOID *data = (VOID*)LockResource(loadedRes);
+    VOID *data = (VOID *)LockResource(loadedRes);
     DWORD size = (size_t)SizeofResource(NULL, foundRes);
-    HANDLE file = CreateFileW(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY, NULL);
-    if (file == INVALID_HANDLE_VALUE) {
+    HANDLE file = CreateFileW(filename,
+                              GENERIC_WRITE,
+                              0, NULL,
+                              CREATE_ALWAYS,
+                              FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_TEMPORARY,
+                              NULL);
+    if (file == INVALID_HANDLE_VALUE)
         return ERR_ALREADY_RUNNING;
-    }
     DWORD foo;
     WriteFile(file, data, size, &foo, NULL);
     CloseHandle(file);
@@ -71,13 +73,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     int argc;
     WCHAR **argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 
-    //Command line options
+    // Command line options
     BOOL optShowLogo = FALSE;
     BOOL optShowTitle = TRUE;
     BOOL optFullscreen = FALSE;
     int codepage = 0;
 
-    //File paths
+    // File paths
     Path gamePath;
     Path savePath;
     Path rtpPath;
@@ -86,7 +88,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Path exePath;
     Path iniPath;
 
-    //Process variables
+    // Process variables
     size_t dllPathSize;
     WCHAR commandLine[MAX_PATH + 32];
     WCHAR env[(MAX_PATH + 2) * 2 + STRLEN(ENV_SAVE_PATH) + STRLEN(ENV_RTP_PATH)
@@ -104,7 +106,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     void *pLoadLibraryW = NULL;
     HANDLE thread = NULL;
 
-    //Parse arguments
+    // Parse arguments
     gamePath[0] = savePath[0] = rtpPath[0] = 0;
     for (int i = 1; i < argc; ++i) {
         if (!wcscmp(argv[i], L"--show-logo"))
@@ -152,7 +154,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         }
     }
 
-    //Get the game path
+    // Get the game path
     if (gamePath[0] == 0) {
         if (GetModuleFileNameW(NULL, gamePath, MAX_PATH) >= MAX_PATH) {
             error = ERR_INVALID_PATH;
@@ -162,25 +164,25 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         PathAddBackslashW(gamePath);
     }
 
-    //Get the exe path
+    // Get the exe path
     if (file_concatPath(exePath, gamePath, EXE_NAME)) {
         error = ERR_INVALID_PATH;
         goto end;
     }
 
-    //See if the exe exists
+    // See if the exe exists
     if (!file_exists(exePath)) {
         error = ERR_EXE_DNE;
         goto end;
     }
 
-    //Get the ini path
+    // Get the ini path
     if (file_concatPath(iniPath, gamePath, INI_NAME)) {
         error = ERR_INVALID_PATH;
         goto end;
     }
 
-    //Read some options from the ini if it exists
+    // Read some options from the ini if it exists
     if (file_exists(iniPath)) {
         if (!optShowLogo)
             optShowLogo = getIniBool(iniPath, L"logo", FALSE);
@@ -192,7 +194,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             codepage = getIniInt(iniPath, L"codepage");
     }
 
-    //Get the RTP path
+    // Get the RTP path
     if (rtpPath[0] == 0) {
         BOOL fail = FALSE;
 
@@ -202,7 +204,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         else
             keyStr = L"Software\\ASCII\\RPG2000";
 
-        //Read from registry
+        // Read from registry
         HKEY key = INVALID_HANDLE_VALUE;
         RegOpenKeyExW(HKEY_CURRENT_USER, keyStr, 0, KEY_READ, &key);
         if (key != INVALID_HANDLE_VALUE) {
@@ -211,7 +213,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             if (RegQueryValueExW(key, L"RuntimePackagePath", 0, &type,
                                  (LPBYTE)rtpPath, &size) == ERROR_SUCCESS
                     && type == REG_SZ) {
-                //Make sure string is null-terminated
+                // Make sure string is null-terminated
                 size /= 2;
                 if (rtpPath[size - 1] != 0) {
                     if (size >= MAX_PATH) {
@@ -222,39 +224,37 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     rtpPath[size] = 0;
                     ++size;
                 }
-                //Fix path
+                // Fix path
                 if (file_fixPath(rtpPath, size)) {
                     RegCloseKey(key);
                     error = ERR_INVALID_PATH;
                     goto end;
                 }
-            } else {
+            } else
                 fail = TRUE;
-            }
             RegCloseKey(key);
-        } else {
+        } else
             fail = TRUE;
-        }
 
         if (fail) {
-            //See if the program says it needs the RTP;
-            //if it does, display a warning
+            // See if the program says it needs the RTP;
+            // if it does, display a warning
             WCHAR fullPackageFlag[2];
             if (GetPrivateProfileStringW(L"RPG_RT", L"FullPackageFlag", L"0",
                                          fullPackageFlag, 2, L".\\RPG_RT.ini")
                     != 1 || fullPackageFlag[0] == '0') {
                 MessageBoxW(NULL, L"This game is marked as requiring the "
-                                  L"RPG Maker RTP to run properly. While the "
-                                  L"game might run properly without installing "
-                                  L"the RTP, it is recommended you install it "
-                                  L"before playing.",
+                            L"RPG Maker RTP to run properly. While the "
+                            L"game might run properly without installing "
+                            L"the RTP, it is recommended you install it "
+                            L"before playing.",
                             L"RPGLauncher", MB_ICONWARNING);
             }
             rtpPath[0] = 0;
         }
     }
 
-    //Get the dll path
+    // Get the dll path
     dllPathSize = GetTempPathW(MAX_PATH, dllPath);
     if (dllPathSize >= MAX_PATH - STRLEN(DLL_NAME)) {
         error = ERR_INVALID_PATH;
@@ -264,42 +264,43 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     dllPathSize += STRLEN(DLL_NAME);
     dllPathSize = (dllPathSize + 1) * sizeof(WCHAR);
 
-    //Extract DLL
+    // Extract DLL
     if ((error = extract(hInstance, "DLL", dllPath)) != ERR_NONE)
         goto end;
-	MoveFileExW(dllPath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+    MoveFileExW(dllPath, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
 
 #ifdef GUESS_ENCODING
-	//Get the codepage if necessary
-	if (codepage == 0) {
-	    //Get the ldb path
-	    Path ldbPath;
-	    if (pathcat(ldbPath, gamePath, LDB_NAME)) {
-	        error = ERR_INVALID_PATH;
+    // Get the codepage if necessary
+    if (codepage == 0) {
+        // Get the ldb path
+        Path ldbPath;
+        if (pathcat(ldbPath, gamePath, LDB_NAME)) {
+            error = ERR_INVALID_PATH;
             goto end;
         }
 
-	    //Get the libguess path
-	    Path libguessPath;
-	    if (GetTempPathW(MAX_PATH, libguessPath) >= MAX_PATH - STRLEN(LIBGUESS_NAME)) {
-	        error = ERR_INVALID_PATH;
-	        goto end;
-	    }
-	    wcscat(libguessPath, LIBGUESS_NAME);
+        // Get the libguess path
+        Path libguessPath;
+        if (GetTempPathW(MAX_PATH, libguessPath)
+                >= MAX_PATH - STRLEN(LIBGUESS_NAME)) {
+            error = ERR_INVALID_PATH;
+            goto end;
+        }
+        wcscat(libguessPath, LIBGUESS_NAME);
 
-	    //Extract DLL
-	    if ((error = extract(hInstance, "LIBGUESS", libguessPath)) != ERR_NONE)
-	        goto end;
+        // Extract DLL
+        if ((error = extract(hInstance, "LIBGUESS", libguessPath)) != ERR_NONE)
+            goto end;
 
-        //Get the codepage, free the library and delete it
-	    codepage_init(libguessPath);
-	    codepage = codepage_guessLdbEncoding(ldbPath);
-	    codepage_free();
-	    DeleteFileW(libguessPath);
-	}
+        // Get the codepage, free the library and delete it
+        codepage_init(libguessPath);
+        codepage = codepage_guessLdbEncoding(ldbPath);
+        codepage_free();
+        DeleteFileW(libguessPath);
+    }
 #endif
 
-    //Create command line
+    // Create command line
     wcscpy(commandLine, L"\"");
     wcscat(commandLine, exePath);
     wcscat(commandLine, L"\"");
@@ -316,7 +317,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     else
         wcscat(commandLine, L" Window");
 
-    //Create environment variable block
+    // Create environment variable block
     wsprintfW(env, L"%s=%s", ENV_SAVE_PATH, savePath);
     envSize = wcslen(env) + 1;
     wsprintfW(env + envSize, L"%s=%s", ENV_RTP_PATH, rtpPath);
@@ -325,7 +326,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     envSize += wcslen(env + envSize) + 1;
     env[envSize] = 0;
 
-    //Spawn the RPG_RT.exe process and inject
+    // Spawn the RPG_RT.exe process and inject
     if (!CreateProcessW(exePath, commandLine, 0, 0, FALSE,
                         CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT,
                         env, gamePath, &si, &pi)) {
@@ -374,7 +375,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
 end:
-    //Cleanup
+    // Cleanup
     LocalFree(argv);
     if (thread)
         CloseHandle(thread);
@@ -386,7 +387,7 @@ end:
     if (error == ERR_NONE) {
         ResumeThread(pi.hThread);
     } else {
-        if(pi.hProcess)
+        if (pi.hProcess)
             TerminateProcess(pi.hProcess, 1);
     }
 

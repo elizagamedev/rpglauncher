@@ -5,20 +5,20 @@
 #define HKEY_FAKE   ((HKEY)0x80000010)
 #define HFILE_FAKE  ((HANDLE)1)
 
-//The last directshow-rendered thing loaded
+// The last directshow-rendered thing loaded
 static Path lastDirectShowFile;
 
-//Title of the game window
+// Title of the game window
 static WCHAR wtitle[256];
 static size_t wtitleSize = 0;
 
-//----------------
-//HOOKED FUNCTIONS
-//----------------
+/*******************
+ * Hooked Functions
+ */
 
-//KERNEL
+// KERNEL
 
-//These functions are vital for telling RPGM to use a MBCS
+// These functions are vital for telling RPGM to use a MBCS
 BOOL WINAPI
 hook_GetCPInfo(UINT CodePage, LPCPINFO lpCPInfo)
 {
@@ -39,8 +39,8 @@ hook_GetModuleFileNameA(HMODULE hModule, LPSTR lpFileName, DWORD nSize)
     return 0;
 }
 
-//Sound gets loaded as absolute path, for some reason, so trick it into using
-//a relative path
+// Sound gets loaded as absolute path, for some reason, so trick it into using
+// a relative path
 DWORD WINAPI
 hook_GetFullPathNameA(LPCSTR lpFileName, DWORD nBufferLength, LPSTR lpBuffer,
                       LPSTR *lpFilePart)
@@ -83,7 +83,7 @@ hook_CreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode,
     if (util_getPatchedPath(lpFileNameW, lpFileName))
         return INVALID_HANDLE_VALUE;
 
-    //Get extension for DirectShow files
+    // Get extension for DirectShow files
     LPWSTR ext = PathFindExtensionW(lpFileNameW) + 1;
 
     HANDLE result = CreateFileW(lpFileNameW, dwDesiredAccess, dwShareMode,
@@ -109,15 +109,16 @@ hook_GetPrivateProfileStringA(LPCSTR lpAppName, LPCSTR lpKeyName,
                               LPCSTR lpDefault, LPSTR lpReturnedString,
                               DWORD nSize, LPCSTR lpFileName)
 {
-    //Force FullPackageFlag to be 0 (we trick the game into reading from the "registry" that it exists anyway)
+    // Force FullPackageFlag to be 0 (we trick the game into reading from the
+    // "registry" that it exists anyway)
     if (!stricmp(lpKeyName, "FullPackageFlag")) {
         lpReturnedString[0] = '0';
         lpReturnedString[1] = 0;
         return 1;
     }
 
-    //Don't do anything with the game title, we do that ourselves
-    //Or anything else for that matter
+    // Don't do anything with the game title, we do that ourselves
+    // Or anything else for that matter
     lpReturnedString[0] = 0;
     return 0;
 }
@@ -126,28 +127,30 @@ int WINAPI
 hook_MultiByteToWideChar(UINT CodePage, DWORD dwFlags, LPCSTR lpMultiByteStr,
                          int cbMultiByte, LPWSTR lpWideCharStr, int cchWideChar)
 {
-    if(CodePage == CP_ACP)
+    if (CodePage == CP_ACP)
         CodePage = config.codepage;
     return MultiByteToWideChar(CodePage, dwFlags, lpMultiByteStr, cbMultiByte,
                                lpWideCharStr, cchWideChar);
 }
 
 int WINAPI
-hook_WideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr, int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte, LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar)
+hook_WideCharToMultiByte(UINT CodePage, DWORD dwFlags, LPCWSTR lpWideCharStr,
+                         int cchWideChar, LPSTR lpMultiByteStr, int cbMultiByte,
+                         LPCSTR lpDefaultChar, LPBOOL lpUsedDefaultChar)
 {
-    if(CodePage == CP_ACP)
+    if (CodePage == CP_ACP)
         CodePage = config.codepage;
     return WideCharToMultiByte(CodePage, dwFlags, lpWideCharStr, cchWideChar,
                                lpMultiByteStr, cbMultiByte, lpDefaultChar,
                                lpUsedDefaultChar);
 }
 
-//USER
-//For MBCS
+// USER
+// For MBCS
 int WINAPI
 hook_GetSystemMetrics(int nIndex)
 {
-    if(nIndex == SM_DBCSENABLED)
+    if (nIndex == SM_DBCSENABLED)
         return TRUE;
     return GetSystemMetrics(nIndex);
 }
@@ -159,7 +162,7 @@ hook_CreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName,
                      LPVOID lpParam)
 {
     if (!strcmp(lpClassName, "TFormLcfGameMain")) {
-        //Get the title of the game
+        // Get the title of the game
         CHAR title[256];
         GetPrivateProfileStringA("RPG_RT", "GameTitle", "Untitled", title,
                                  256, ".\\RPG_RT.ini");
@@ -187,8 +190,8 @@ hook_RegisterClassA(const WNDCLASSA *lpWndClass)
     wndClassW.lpszMenuName = util_toWideAlloc(lpWndClass->lpszMenuName);
     wndClassW.lpszClassName = util_toWideAlloc(lpWndClass->lpszClassName);
     ATOM result = RegisterClassW(&wndClassW);
-    free((void*)wndClassW.lpszMenuName);
-    free((void*)wndClassW.lpszClassName);
+    free((void *)wndClassW.lpszMenuName);
+    free((void *)wndClassW.lpszClassName);
     return result;
 }
 
@@ -227,11 +230,11 @@ hook_GetWindowLongA(HWND hWnd, int nIndex)
 LRESULT WINAPI
 hook_DefWindowProcA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-    switch(Msg) {
+    switch (Msg) {
     case WM_SETTEXT:
         return TRUE;
     case WM_GETTEXT:
-        memcpy((void*)lParam, wtitle, (wtitleSize + 1) * 2);
+        memcpy((void *)lParam, wtitle, (wtitleSize + 1) * 2);
         return wtitleSize;
     case WM_GETTEXTLENGTH:
         return (wtitleSize + 1) * 2;
@@ -249,7 +252,7 @@ hook_LoadStringA(HINSTANCE hInstance, UINT uID, LPSTR lpBuffer, int nBufferMax)
     return result;
 }
 
-//ADVAPI
+// ADVAPI
 LONG WINAPI
 hook_RegCreateKeyExA(HKEY hKey, LPCSTR lpSubKey, DWORD Reserved, LPSTR lpClass,
                      DWORD dwOptions, REGSAM samDesired,
@@ -275,9 +278,9 @@ LONG WINAPI
 hook_RegQueryValueExA(HKEY hKey, LPCSTR lpValueName, LPDWORD lpReserved,
                       LPDWORD lpType, LPBYTE lpData, LPDWORD lpcbData)
 {
-    //Only override RuntimePackagePath
+    // Only override RuntimePackagePath
     if (stricmp(lpValueName, "RuntimePackagePath")) {
-        if(hKey == HKEY_FAKE)
+        if (hKey == HKEY_FAKE)
             return ERROR_FILE_NOT_FOUND;
         return RegQueryValueExA(hKey, lpValueName, lpReserved, lpType, lpData,
                                 lpcbData);
@@ -311,7 +314,7 @@ hook_RegCloseKey(HKEY hKey)
 }
 
 
-//GDI
+// GDI
 BOOL WINAPI
 hook_GetTextExtentPoint32A(HDC hdc, LPCSTR lpString, int c, LPSIZE lpSize)
 {
@@ -342,15 +345,15 @@ hook_CreateFontIndirectA(const LOGFONTA *lplf)
         wcscpy(lfW.lfFaceName, L"MS PGothic");
     else if (!wcscmp(lfW.lfFaceName, L"ＭＳ ゴシック"))
         wcscpy(lfW.lfFaceName, L"MS Gothic");
-    else if(!wcscmp(lfW.lfFaceName, L"MS P明朝"))
+    else if (!wcscmp(lfW.lfFaceName, L"MS P明朝"))
         wcscpy(lfW.lfFaceName, L"MS PMincho");
     else if (!wcscmp(lfW.lfFaceName, L"ＭＳ 明朝"))
         wcscpy(lfW.lfFaceName, L"MS Mincho");
     return CreateFontIndirectW(&lfW);
 }
 
-//SHELL
-//LSD files use this for some reason
+// SHELL
+// LSD files use this for some reason
 BOOL
 hook_SHGetPathFromIDListA(PCIDLIST_ABSOLUTE pidl, LPTSTR pszPath)
 {
@@ -358,24 +361,24 @@ hook_SHGetPathFromIDListA(PCIDLIST_ABSOLUTE pidl, LPTSTR pszPath)
     return TRUE;
 }
 
-//COM OBJECTS
+// COM OBJECTS
 
 void hook_QueryInterface(REFIID riid, void **ppvObject);
 
 #define GET_VTBL(type) type* vtbl = ((void**)This->lpVtbl)[sizeof(type)/4]
 
 ULONG WINAPI
-hook_IGraphBuilder_Release(IGraphBuilder* This)
+hook_IGraphBuilder_Release(IGraphBuilder *This)
 {
     GET_VTBL(IGraphBuilderVtbl);
 
-    free((void*)This->lpVtbl);
+    free((void *)This->lpVtbl);
     This->lpVtbl = vtbl;
     return vtbl->Release(This);
 }
 
 STDMETHODIMP
-hook_IGraphBuilder_RenderFile(IGraphBuilder* This, LPCWSTR lpwstrFile,
+hook_IGraphBuilder_RenderFile(IGraphBuilder *This, LPCWSTR lpwstrFile,
                               LPCWSTR lpwstrPlayList)
 {
     GET_VTBL(IGraphBuilderVtbl);
@@ -385,9 +388,9 @@ hook_IGraphBuilder_RenderFile(IGraphBuilder* This, LPCWSTR lpwstrFile,
     return result;
 }
 
-//IUnknown
+// IUnknown
 STDMETHODIMP
-hook_IUnknown_QueryInterface(IUnknown* This, REFIID riid, void **ppvObject)
+hook_IUnknown_QueryInterface(IUnknown *This, REFIID riid, void **ppvObject)
 {
     GET_VTBL(IUnknownVtbl);
 
@@ -398,14 +401,14 @@ hook_IUnknown_QueryInterface(IUnknown* This, REFIID riid, void **ppvObject)
     return result;
 }
 
-//Generic
+// Generic
 void
 hook_QueryInterface(REFIID riid, void **ppvObject)
 {
     if (IsEqualIID(riid, (REFGUID)&IID_IGraphBuilder)) {
-        IGraphBuilder* obj = (IGraphBuilder*)*ppvObject;
-        IGraphBuilderVtbl* vtbl = malloc(sizeof(IGraphBuilderVtbl) + 4);
-        ((void**)vtbl)[sizeof(IGraphBuilderVtbl)/4] = obj->lpVtbl;
+        IGraphBuilder *obj = (IGraphBuilder *)*ppvObject;
+        IGraphBuilderVtbl *vtbl = malloc(sizeof(IGraphBuilderVtbl) + 4);
+        ((void **)vtbl)[sizeof(IGraphBuilderVtbl)/4] = obj->lpVtbl;
         memcpy(vtbl, obj->lpVtbl, sizeof(IGraphBuilderVtbl));
         obj->lpVtbl = vtbl;
 
@@ -415,16 +418,16 @@ hook_QueryInterface(REFIID riid, void **ppvObject)
 }
 
 ULONG WINAPI
-hook_IUnknown_Release(IUnknown* This)
+hook_IUnknown_Release(IUnknown *This)
 {
     GET_VTBL(IUnknownVtbl);
 
-    free((void*)This->lpVtbl);
+    free((void *)This->lpVtbl);
     This->lpVtbl = vtbl;
     return vtbl->Release(This);
 }
 
-//OLE
+// OLE
 HRESULT WINAPI
 hook_CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext,
                       REFIID riid, LPVOID *ppv)
@@ -432,12 +435,12 @@ hook_CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext,
     HRESULT result = CoCreateInstance(rclsid, pUnkOuter, dwClsContext,
                                       riid, ppv);
 
-    //Do we need to hook this?
+    // Do we need to hook this?
     if (IsEqualCLSID(rclsid, (REFGUID)&CLSID_FilterGraph)) {
-        IUnknown* obj = (IUnknown*)*ppv;
-        IUnknownVtbl* vtbl = malloc(sizeof(IUnknownVtbl) + 4);
+        IUnknown *obj = (IUnknown *)*ppv;
+        IUnknownVtbl *vtbl = malloc(sizeof(IUnknownVtbl) + 4);
 
-        ((void**)vtbl)[sizeof(IUnknownVtbl)/4] = obj->lpVtbl;
+        ((void **)vtbl)[sizeof(IUnknownVtbl)/4] = obj->lpVtbl;
         memcpy(vtbl, obj->lpVtbl, sizeof(IUnknownVtbl));
         obj->lpVtbl = vtbl;
 
@@ -448,14 +451,14 @@ hook_CoCreateInstance(REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext,
     return result;
 }
 
-//---------
-//HOOKING
-//---------
+/**********
+ * Hooking
+ */
 typedef struct
 {
-    const char* name;
-    void* funcHook;
-    void* funcOrig;
+    const char *name;
+    void *funcHook;
+    void *funcOrig;
 } Hook;
 
 #define MODULE(name)    {#name "32.dll", NULL, NULL},
@@ -508,37 +511,37 @@ Hook hooks[] = {
 
 BOOL hook_init()
 {
-    //Initialize original function addresses
+    // Initialize original function addresses
     HMODULE module = NULL;
     for (int i = 0; i < HOOK_MAX; i++) {
         if (hooks[i].funcHook)
-            hooks[i].funcOrig = (void*)GetProcAddress(module, hooks[i].name);
+            hooks[i].funcOrig = (void *)GetProcAddress(module, hooks[i].name);
         else
             module = GetModuleHandleA(hooks[i].name);
     }
 
-    //Check DOS Header
+    // Check DOS Header
     PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)GetModuleHandleW(NULL);
     if (dos->e_magic != IMAGE_DOS_SIGNATURE)
         return FALSE;
 
-    //Check NT Header
+    // Check NT Header
     PIMAGE_NT_HEADERS nt = MAKE_POINTER(PIMAGE_NT_HEADERS, dos, dos->e_lfanew);
     if (nt->Signature != IMAGE_NT_SIGNATURE)
         return FALSE;
 
-    //Check import module table
+    // Check import module table
     PIMAGE_IMPORT_DESCRIPTOR modules
         = MAKE_POINTER(PIMAGE_IMPORT_DESCRIPTOR, dos,
                        nt->OptionalHeader
-                           .DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]
-                           .VirtualAddress);
+                       .DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]
+                       .VirtualAddress);
     if (modules == (PIMAGE_IMPORT_DESCRIPTOR)nt)
         return FALSE;
 
-    //Find the correct module
+    // Find the correct module
     while (modules->Name) {
-        const char *moduleStr = MAKE_POINTER(const char*, dos, modules->Name);
+        const char *moduleStr = MAKE_POINTER(const char *, dos, modules->Name);
 
         int i = 0;
         for (; i < HOOK_MAX; ++i) {
@@ -547,25 +550,23 @@ BOOL hook_init()
         }
 
         if (i < HOOK_MAX) {
-            //Find the correct function
+            // Find the correct function
             PIMAGE_THUNK_DATA thunk = MAKE_POINTER(PIMAGE_THUNK_DATA, dos,
                                                    modules->FirstThunk);
             while (thunk->u1.Function) {
                 for (int j = i + 1; j < HOOK_MAX && hooks[j].funcHook; j++) {
-                    if(thunk->u1.Function == (DWORD)hooks[j].funcOrig) {
-                        //Overwrite
+                    if (thunk->u1.Function == (DWORD)hooks[j].funcOrig) {
+                        // Overwrite
                         DWORD flags;
                         if (!VirtualProtect(&thunk->u1.Function,
                                             sizeof(thunk->u1.Function),
-                                            PAGE_READWRITE, &flags)) {
+                                            PAGE_READWRITE, &flags))
                             return FALSE;
-                        }
                         thunk->u1.Function = (DWORD)hooks[j].funcHook;
                         if (!VirtualProtect(&thunk->u1.Function,
                                             sizeof(thunk->u1.Function),
-                                            flags, &flags)) {
+                                            flags, &flags))
                             return FALSE;
-                        }
                     }
                 }
                 ++thunk;
